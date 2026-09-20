@@ -538,9 +538,14 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
             <Sparkles className="w-4 h-4 text-amber-400" />
             Обновление приложения
           </h3>
-          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-            GitHub OTA
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+              v1.1.0
+            </span>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              GitHub OTA
+            </span>
+          </div>
         </div>
 
         <p className="text-xs text-slate-400">

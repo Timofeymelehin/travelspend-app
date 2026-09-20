@@ -8,8 +8,28 @@ interface AppUpdaterPlugin {
 
 const AppUpdater = registerPlugin<AppUpdaterPlugin>('AppUpdater');
 
+const STORAGE_KEY_LAST_CHECK = 'travelspend_last_update_check';
+const STORAGE_KEY_DISMISSED_VERSION = 'travelspend_dismissed_version';
+
+/**
+ * Compare two semver strings: returns 1 if vA > vB, -1 if vA < vB, 0 if equal
+ */
+function compareSemver(vA: string, vB: string): number {
+  const cleanA = vA.replace(/[^0-9.]/g, '').split('.').map(Number);
+  const cleanB = vB.replace(/[^0-9.]/g, '').split('.').map(Number);
+
+  const maxLen = Math.max(cleanA.length, cleanB.length, 3);
+  for (let i = 0; i < maxLen; i++) {
+    const numA = cleanA[i] || 0;
+    const numB = cleanB[i] || 0;
+    if (numA > numB) return 1;
+    if (numA < numB) return -1;
+  }
+  return 0;
+}
+
 export async function checkForAppUpdates(manual = false) {
-  // If running in browser preview or offline, avoid unnecessary network errors
+  // If offline, avoid unnecessary network attempts
   if (!navigator.onLine) {
     if (manual) {
       alert("Отсутствует интернет-соединение. Подключитесь к сети для проверки обновлений.");
@@ -17,13 +37,19 @@ export async function checkForAppUpdates(manual = false) {
     return;
   }
 
-  // Automatic check is only intended for the native mobile app (Capacitor), not the web development preview
-  if (!manual && !Capacitor.isNativePlatform()) {
-    return;
+  // Rate-limiting for auto checks: do not spam the user or GitHub API on every re-render/tab switch
+  if (!manual) {
+    const lastCheck = localStorage.getItem(STORAGE_KEY_LAST_CHECK);
+    const now = Date.now();
+    // Check at most once per hour automatically
+    if (lastCheck && now - Number(lastCheck) < 60 * 60 * 1000) {
+      return;
+    }
+    localStorage.setItem(STORAGE_KEY_LAST_CHECK, now.toString());
   }
 
   try {
-    let currentVersion = "1.0.0";
+    let currentVersion = "1.1.0";
     try {
       if (Capacitor.isNativePlatform()) {
         const appInfo = await App.getInfo();
@@ -32,13 +58,12 @@ export async function checkForAppUpdates(manual = false) {
         }
       }
     } catch {
-      currentVersion = "1.0.0";
+      currentVersion = "1.1.0";
     }
 
     const repoOwner = "Timofeymelehin";
     const repoName = "travelspend-app";
     
-    // Add timeout to prevent hanging fetch
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
@@ -51,7 +76,7 @@ export async function checkForAppUpdates(manual = false) {
 
     if (response.status === 404) {
       if (manual) {
-        alert("Релизы на GitHub пока не найдены. Сборка первого релиза будет сформирована в репозитории.");
+        alert("Релизы на GitHub пока не найдены.");
       }
       return;
     }
@@ -65,18 +90,35 @@ export async function checkForAppUpdates(manual = false) {
 
     const release = await response.json();
     const latestTag = release.tag_name || "";
-    const latestVersion = latestTag.replace('v', '');
+    const latestVersion = latestTag.replace(/^v/i, '').trim();
 
-    if (latestVersion && latestVersion !== currentVersion) {
+    // STRICT CHECK: Only trigger if latestVersion is strictly GREATER than currentVersion
+    const isNewer = compareSemver(latestVersion, currentVersion) > 0;
+
+    if (isNewer) {
+      // If the user already dismissed this specific version in automatic mode, don't nag repeatedly
+      if (!manual) {
+        const dismissedVersion = localStorage.getItem(STORAGE_KEY_DISMISSED_VERSION);
+        if (dismissedVersion === latestVersion) {
+          return;
+        }
+      }
+
       const apkAsset = release.assets?.find((asset: any) => asset.name.endsWith('.apk'));
       if (apkAsset && apkAsset.browser_download_url) {
-        const confirmUpdate = window.confirm(`Доступна новая версия ${latestVersion} (у вас ${currentVersion}). Обновить приложение?`);
+        const confirmUpdate = window.confirm(
+          `Доступна новая версия ${latestVersion} (у вас ${currentVersion}).\n\nОбновить приложение сейчас?`
+        );
+
         if (confirmUpdate) {
           if (Capacitor.isNativePlatform()) {
             await downloadAndInstallApk(apkAsset.browser_download_url);
           } else {
             window.location.href = apkAsset.browser_download_url;
           }
+        } else {
+          // User clicked cancel: remember dismissal so it won't ask again on every launch
+          localStorage.setItem(STORAGE_KEY_DISMISSED_VERSION, latestVersion);
         }
       } else {
         if (manual) {
@@ -85,7 +127,7 @@ export async function checkForAppUpdates(manual = false) {
       }
     } else {
       if (manual) {
-        alert(`У вас установлена последняя актуальная версия (${currentVersion}).`);
+        alert(`У вас уже установлена актуальная версия (${currentVersion}). Обновление не требуется.`);
       }
     }
   } catch (e: any) {
