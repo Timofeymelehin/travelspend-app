@@ -110,9 +110,17 @@ async function downloadAndInstallApk(apkUrl: string) {
 
     if (downloadResult.path) {
       await AppUpdater.installApk({ filePath: downloadResult.path });
+      return;
     }
   } catch (error) {
-    console.error("Failed to download or install APK:", error);
-    alert("Не удалось установить обновление автоматически. Пожалуйста, скачайте APK с GitHub.");
+    console.error("Failed to download or install APK automatically:", error);
+  }
+
+  // Fallback: open APK in mobile browser so Android native package installer takes over
+  const shouldOpenBrowser = window.confirm(
+    "Не удалось запустить автоустановщик внутри приложения.\nОткрыть прямую ссылку на APK в браузере для быстрой загрузки?"
+  );
+  if (shouldOpenBrowser) {
+    window.location.href = apkUrl;
   }
 }

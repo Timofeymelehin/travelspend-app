@@ -21,7 +21,18 @@ public class AppUpdaterPlugin extends Plugin {
             return;
         }
 
-        File apkFile = new File(filePath);
+        File apkFile;
+        if (filePath.startsWith("file://")) {
+            apkFile = new File(Uri.parse(filePath).getPath());
+        } else {
+            apkFile = new File(filePath);
+        }
+
+        if (!apkFile.exists()) {
+            call.reject("APK file does not exist at path: " + filePath);
+            return;
+        }
+
         Intent intent = new Intent(Intent.ACTION_VIEW);
 
         Uri apkUri;
