@@ -27,11 +27,17 @@ import {
   shouldAutoLock,
   updateLastActiveTimestamp,
 } from './services/securityService';
+import { checkForAppUpdates } from './services/updateService';
 
 const STORAGE_KEY_TRIPS = 'travelspend_trips_v2';
 const STORAGE_KEY_ACTIVE_TRIP = 'travelspend_active_trip_id_v2';
 
 export default function App() {
+  // Check for app updates on mount
+  useEffect(() => {
+    checkForAppUpdates();
+  }, []);
+
   // Online / Offline Detection
   const isOnline = useOnlineStatus();
   const { isInstallable, install } = usePWAInstall();
