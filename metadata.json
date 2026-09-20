@@ -1,0 +1,6 @@
+{
+  "name": "TravelSpend - Расчет расходов в поездках",
+  "description": "Универсальный офлайн-калькулятор расходов в путешествиях с курсами валют, аналитикой по категориям и таблицей затрат на основе поездки в Японию.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

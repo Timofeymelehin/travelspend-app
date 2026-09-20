@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#311042" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bg)" />
+
+  <!-- Subtle glow ring -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#6366f1" stroke-opacity="0.2" stroke-width="2" />
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#ec4899" stroke-opacity="0.15" stroke-width="2" stroke-dasharray="6 6" />
+
+  <!-- Stylized Torii / Travel Compass Emblem -->
+  <!-- Mount Fuji / Sun silhouette background -->
+  <circle cx="256" cy="230" r="80" fill="url(#accent)" opacity="0.9" filter="url(#shadow)" />
+  <path d="M128 350 L220 220 L256 260 L292 220 L384 350 Z" fill="#0f172a" opacity="0.3" />
+
+  <!-- Foreground Travel Card / Luggage & Yen icon -->
+  <g filter="url(#shadow)">
+    <!-- Plane flight trail -->
+    <path d="M130 380 Q 256 310 380 180" fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 8" />
+    
+    <!-- Airplane -->
+    <path d="M380 180 L395 165 L405 185 L395 190 L388 205 L378 200 L383 188 L368 190 Z" fill="#fbbf24" />
+
+    <!-- Currency Yen / Ruble / Universal sign badge -->
+    <rect x="186" y="270" width="140" height="140" rx="36" fill="#1e293b" stroke="#334155" stroke-width="4" />
+    <!-- Yen symbol ¥ -->
+    <path d="M226 310 L256 350 L286 310 M256 350 L256 385 M234 352 L278 352 M234 366 L278 366" 
+          fill="none" stroke="#38bdf8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>
