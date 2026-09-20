@@ -24,6 +24,7 @@ import {
   KeyRound,
   Trash2,
   Home,
+  Plane,
 } from 'lucide-react';
 
 interface TripsSettingsViewProps {
@@ -32,6 +33,7 @@ interface TripsSettingsViewProps {
   onSelectTrip: (id: string) => void;
   onUpdateTrip: (updated: Trip) => void;
   onCreateTrip: (newTrip: Trip) => void;
+  onDeleteTrip?: (id: string) => void;
   onResetToJapanPreset: () => void;
   onClearAllExpenses?: () => void;
   onRefreshRates: () => void;
@@ -48,6 +50,7 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
   onSelectTrip,
   onUpdateTrip,
   onCreateTrip,
+  onDeleteTrip,
   onResetToJapanPreset,
   onClearAllExpenses,
   onRefreshRates,
@@ -60,6 +63,7 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
   const [name, setName] = useState(currentTrip.name);
   const [destination, setDestination] = useState(currentTrip.destination);
   const [flag, setFlag] = useState(currentTrip.flag || '🇯🇵');
+  const [tripType, setTripType] = useState<'travel' | 'home'>(currentTrip.tripType || 'travel');
   const [baseCurrency, setBaseCurrency] = useState(currentTrip.baseCurrency);
   const [localCurrency, setLocalCurrency] = useState(currentTrip.localCurrency);
   const [totalBudget, setTotalBudget] = useState(currentTrip.totalBudgetBase.toString());
@@ -72,6 +76,7 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
     setName(currentTrip.name);
     setDestination(currentTrip.destination);
     setFlag(currentTrip.flag || '✈️');
+    setTripType(currentTrip.tripType || 'travel');
     setBaseCurrency(currentTrip.baseCurrency);
     setLocalCurrency(currentTrip.localCurrency);
     setTotalBudget(currentTrip.totalBudgetBase.toString());
@@ -86,13 +91,17 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
 
   const handleSaveTripDetails = (e: React.FormEvent) => {
     e.preventDefault();
+    const isHome = tripType === 'home';
     const updated: Trip = {
       ...currentTrip,
       name: name.trim() || currentTrip.name,
       destination: destination.trim() || currentTrip.destination,
-      flag: flag.trim() || '✈️',
+      flag: flag.trim() || (isHome ? '🏠' : '✈️'),
+      tripType,
       baseCurrency,
-      localCurrency,
+      localCurrency: isHome ? baseCurrency : localCurrency,
+      customExchangeRate: isHome ? 1 : currentTrip.customExchangeRate,
+      useManualRate: isHome ? true : currentTrip.useManualRate,
       totalBudgetBase: parseFloat(totalBudget) || 0,
       travelersCount: Math.max(parseInt(travelersCount, 10) || 1, 1),
       startDate,
@@ -264,43 +273,114 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
   return (
     <div className="space-y-5 pb-24 animate-fadeIn max-w-2xl mx-auto">
       {/* 1. Trip Switcher Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Compass className="w-5 h-5 text-indigo-400" />
-            Ваши поездки ({trips.length})
-          </h2>
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Compass className="w-5 h-5 text-indigo-400" />
+              Ваши счета и поездки ({trips.length})
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Управляйте повседневными тратами и путешествиями
+            </p>
+          </div>
           <button
             onClick={() => setShowNewTripModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition active:scale-95 shadow"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Создать поездку</span>
+            <span>Создать счет</span>
           </button>
         </div>
 
-        {/* Trips list chips */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {/* Banner if no home expenses trip exists */}
+        {!trips.some((t) => t.tripType === 'home' || t.flag === '🏠') && (
+          <div className="p-3 rounded-2xl bg-indigo-950/40 border border-indigo-500/40 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="text-2xl shrink-0">🏠</span>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate">Учет повседневных трат (Дома)</p>
+                <p className="text-[11px] text-indigo-300 truncate">Продукты, ЖКУ, кафе, авто, здоровье без конвертации валют</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleCreateNewTrip('home')}
+              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shrink-0 transition active:scale-95 shadow"
+            >
+              + Включить
+            </button>
+          </div>
+        )}
+
+        {/* Trips list with delete buttons */}
+        <div className="space-y-2">
           {trips.map((t) => {
             const isSelected = t.id === currentTrip.id;
+            const isHome = t.tripType === 'home' || t.flag === '🏠';
             return (
-              <button
+              <div
                 key={t.id}
                 onClick={() => onSelectTrip(t.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs font-semibold shrink-0 transition ${
+                className={`flex items-center justify-between p-3 rounded-2xl border text-xs cursor-pointer transition ${
                   isSelected
-                    ? 'bg-indigo-600/30 border-indigo-500 text-white shadow-lg'
-                    : 'bg-slate-800 border-slate-700/70 text-slate-400 hover:text-white'
+                    ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-md'
+                    : 'bg-slate-800/80 border-slate-700/70 text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`}
               >
-                <span className="text-base">{t.flag || '✈️'}</span>
-                <div className="text-left">
-                  <p className="truncate max-w-[140px]">{t.name}</p>
-                  <p className="text-[10px] text-slate-400 font-mono">
-                    {t.localCurrency} ⇄ {t.baseCurrency}
-                  </p>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-xl shrink-0">{t.flag || (isHome ? '🏠' : '✈️')}</span>
+                  <div className="min-w-0">
+                    <p className="font-bold text-white truncate flex items-center gap-1.5">
+                      <span>{t.name}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
+                          isHome
+                            ? 'bg-indigo-500/25 text-indigo-300 border border-indigo-500/30'
+                            : 'bg-sky-500/25 text-sky-300 border border-sky-500/30'
+                        }`}
+                      >
+                        {isHome ? '🏠 Повседневные' : '✈️ Поездка'}
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-slate-400 truncate">
+                      {t.destination} • {t.items.length} трат • {t.baseCurrency}
+                    </p>
+                  </div>
                 </div>
-              </button>
+
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  {isSelected ? (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500 text-white flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Активно
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-slate-400">
+                      Выбрать
+                    </span>
+                  )}
+
+                  {onDeleteTrip && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const isOnlyOne = trips.length <= 1;
+                        const msg = isOnlyOne
+                          ? `Удалить «${t.name}»? Так как это единственная запись, будет создан новый чистый счет повседневных трат.`
+                          : `Удалить «${t.name}» со всеми расходами (${t.items.length} поз.)? Это действие нельзя отменить.`;
+                        if (window.confirm(msg)) {
+                          onDeleteTrip(t.id);
+                        }
+                      }}
+                      className="w-7 h-7 rounded-xl bg-slate-700/60 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 flex items-center justify-center transition"
+                      title="Удалить этот счет / поездку"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
@@ -311,10 +391,10 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <span>Настройки текущей поездки</span>
+              <span>Параметры активного счета</span>
             </h3>
             <p className="text-xs text-slate-400">
-              Валюта, общий лимит бюджета и количество участников
+              Валюта, лимит бюджета и тип расходов
             </p>
           </div>
           {isSavedNotice && (
@@ -325,11 +405,51 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
         </div>
 
         <form onSubmit={handleSaveTripDetails} className="space-y-4">
+          {/* Account Type Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Тип учета расходов
+            </label>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-800 rounded-2xl border border-slate-700">
+              <button
+                type="button"
+                onClick={() => {
+                  setTripType('home');
+                  if (flag === '✈️' || flag === '🇯🇵') setFlag('🏠');
+                  setLocalCurrency(baseCurrency);
+                }}
+                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition ${
+                  tripType === 'home'
+                    ? 'bg-indigo-600 text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Home className="w-3.5 h-3.5" />
+                <span>🏠 Повседневные (Дом)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTripType('travel');
+                  if (flag === '🏠') setFlag('✈️');
+                }}
+                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition ${
+                  tripType === 'travel'
+                    ? 'bg-sky-600 text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Plane className="w-3.5 h-3.5" />
+                <span>✈️ Путешествие</span>
+              </button>
+            </div>
+          </div>
+
           {/* Trip Name & Flag */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="sm:col-span-3">
               <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Название таблицы / поездки
+                {tripType === 'home' ? 'Название учета' : 'Название поездки'}
               </label>
               <input
                 type="text"
@@ -341,7 +461,7 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Флаг / Эмодзи
+                Флаг / Иконка
               </label>
               <input
                 type="text"
@@ -352,32 +472,33 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
             </div>
           </div>
 
-          {/* Currencies */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Местная валюта страны (траты)
-              </label>
-              <select
-                value={localCurrency}
-                onChange={(e) => setLocalCurrency(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
-              >
-                {POPULAR_CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.flag} {c.code} — {c.name} ({c.symbol})
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Destination */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              {tripType === 'home' ? 'Город / Локация' : 'Направление / Страна'}
+            </label>
+            <input
+              type="text"
+              required
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
+              placeholder={tripType === 'home' ? 'например, Москва, Санкт-Петербург, Алматы' : 'например, Япония, Таиланд'}
+              className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+            />
+          </div>
 
+          {/* Currencies */}
+          {tripType === 'home' ? (
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Базовая валюта (для аналитики)
+                Основная валюта учета
               </label>
               <select
                 value={baseCurrency}
-                onChange={(e) => setBaseCurrency(e.target.value)}
+                onChange={(e) => {
+                  setBaseCurrency(e.target.value);
+                  setLocalCurrency(e.target.value);
+                }}
                 className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
               >
                 {POPULAR_CURRENCIES.map((c) => (
@@ -387,14 +508,50 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
                 ))}
               </select>
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Местная валюта страны (траты)
+                </label>
+                <select
+                  value={localCurrency}
+                  onChange={(e) => setLocalCurrency(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                >
+                  {POPULAR_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.flag} {c.code} — {c.name} ({c.symbol})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Базовая валюта (для аналитики)
+                </label>
+                <select
+                  value={baseCurrency}
+                  onChange={(e) => setBaseCurrency(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                >
+                  {POPULAR_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.flag} {c.code} — {c.name} ({c.symbol})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Budget & Travelers */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
                 <Wallet className="w-3.5 h-3.5 text-indigo-400" />
-                Общий запланированный бюджет ({baseCurrency})
+                {tripType === 'home' ? `Лимит бюджета на месяц (${baseCurrency})` : `Общий бюджет поездки (${baseCurrency})`}
               </label>
               <input
                 type="number"
@@ -409,7 +566,7 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-sky-400" />
-                Количество человек (для расчета на 1 чел.)
+                {tripType === 'home' ? 'Членов семьи / участников' : 'Количество человек'}
               </label>
               <input
                 type="number"
@@ -427,7 +584,7 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                Дата начала поездки
+                {tripType === 'home' ? 'Начало учетного периода' : 'Дата начала поездки'}
               </label>
               <input
                 type="date"
@@ -439,7 +596,7 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                Дата окончания поездки
+                {tripType === 'home' ? 'Конец учетного периода' : 'Дата окончания поездки'}
               </label>
               <input
                 type="date"
@@ -454,8 +611,33 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
             type="submit"
             className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition active:scale-98 shadow-md shadow-indigo-950"
           >
-            Сохранить параметры поездки
+            Сохранить параметры
           </button>
+
+          {/* Delete active trip button */}
+          {onDeleteTrip && (
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+              <div className="text-xs text-slate-400">
+                Удалить этот счет ({currentTrip.items.length} поз. расходов):
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const isOnlyOne = trips.length <= 1;
+                  const msg = isOnlyOne
+                    ? `Удалить «${currentTrip.name}»? Так как это единственный счет, будет создан чистый счет повседневных трат.`
+                    : `Удалить «${currentTrip.name}» со всеми расходами (${currentTrip.items.length} поз.)? Это действие нельзя отменить.`;
+                  if (window.confirm(msg)) {
+                    onDeleteTrip(currentTrip.id);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold transition active:scale-95"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Удалить счет</span>
+              </button>
+            </div>
+          )}
         </form>
       </div>
 

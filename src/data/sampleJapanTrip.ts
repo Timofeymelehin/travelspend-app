@@ -1,5 +1,27 @@
 import { Trip } from '../types';
 
+export const createDefaultHomeTrip = (): Trip => {
+  const today = new Date();
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+  return {
+    id: `trip-home-${Date.now()}`,
+    name: 'Повседневные траты (Дом)',
+    destination: 'Россия (Дом) 🇷🇺',
+    flag: '🏠',
+    startDate: startOfMonth,
+    endDate: endOfMonth,
+    baseCurrency: 'RUB',
+    localCurrency: 'RUB',
+    customExchangeRate: 1,
+    useManualRate: true,
+    totalBudgetBase: 60000,
+    travelersCount: 1,
+    tripType: 'home',
+    items: [],
+  };
+};
+
 export const DEFAULT_EMPTY_TRIP: Trip = {
   id: 'trip-empty-initial',
   name: 'Моя поездка',
