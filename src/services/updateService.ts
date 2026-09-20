@@ -16,8 +16,18 @@ export async function checkForAppUpdates(manual = false) {
     const repoOwner = "Timofeymelehin";
     const repoName = "travelspend-app";
     const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/releases/latest`);
+
+    if (response.status === 404) {
+      if (manual) {
+        alert("Релизы на GitHub пока не найдены (404). Создайте первый релиз (Release) с прикрепленным APK-файлом в репозитории GitHub.");
+      }
+      return;
+    }
+
     if (!response.ok) {
-      if (manual) alert("Не удалось проверить обновление. Проверьте подключение к интернету.");
+      if (manual) {
+        alert("Не удалось проверить обновление. Проверьте подключение к интернету.");
+      }
       return;
     }
 
@@ -33,14 +43,20 @@ export async function checkForAppUpdates(manual = false) {
           await downloadAndInstallApk(apkAsset.browser_download_url);
         }
       } else {
-        if (manual) alert(`Найдена версия ${latestVersion}, но APK файл релиза не найден.`);
+        if (manual) {
+          alert(`Найдена версия ${latestVersion}, но APK файл не прикреплен к релизу в GitHub.`);
+        }
       }
     } else {
-      if (manual) alert(`У вас установлена последняя актуальная версия (${currentVersion}).`);
+      if (manual) {
+        alert(`У вас установлена последняя актуальная версия (${currentVersion}).`);
+      }
     }
   } catch (e) {
     console.error("Failed to check for app updates:", e);
-    if (manual) alert("Произошла ошибка при проверке обновлений.");
+    if (manual) {
+      alert("Произошла ошибка при проверке обновлений. Проверьте подключение к интернету.");
+    }
   }
 }
 
