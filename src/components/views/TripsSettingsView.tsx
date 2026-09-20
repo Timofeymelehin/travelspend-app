@@ -4,6 +4,7 @@ import { POPULAR_CURRENCIES } from '../../data/categories';
 import { exportExpensesToCSV, parseCSVToExpenses } from '../../utils/csvHelper';
 import { formatCurrency } from '../../utils/formatters';
 import { DEFAULT_JAPAN_TRIP } from '../../data/sampleJapanTrip';
+import { checkForAppUpdates } from '../../services/updateService';
 import {
   Compass,
   FileSpreadsheet,
@@ -526,6 +527,36 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Сбросить к образцу Японии</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 7. App Updates (GitHub Releases) */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            Обновление приложения
+          </h3>
+          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+            GitHub OTA
+          </span>
+        </div>
+
+        <p className="text-xs text-slate-400">
+          Проверьте наличие новой версии приложения на GitHub. При обновлении все ваши старые данные (траты, настройки, история) сохраняются автоматически.
+        </p>
+
+        <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+          <div className="text-xs text-slate-400">
+            Установка свежего APK в один клик:
+          </div>
+          <button
+            onClick={() => checkForAppUpdates(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Проверить обновления</span>
           </button>
         </div>
       </div>

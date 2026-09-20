@@ -8,7 +8,7 @@ interface AppUpdaterPlugin {
 
 const AppUpdater = registerPlugin<AppUpdaterPlugin>('AppUpdater');
 
-export async function checkForAppUpdates() {
+export async function checkForAppUpdates(manual = false) {
   try {
     const appInfo = await App.getInfo();
     const currentVersion = appInfo.version; // e.g., "1.0.0"
@@ -16,7 +16,10 @@ export async function checkForAppUpdates() {
     const repoOwner = "Timofeymelehin";
     const repoName = "travelspend-app";
     const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/releases/latest`);
-    if (!response.ok) return;
+    if (!response.ok) {
+      if (manual) alert("Не удалось проверить обновление. Проверьте подключение к интернету.");
+      return;
+    }
 
     const release = await response.json();
     const latestTag = release.tag_name || "";
@@ -29,10 +32,15 @@ export async function checkForAppUpdates() {
         if (confirmUpdate) {
           await downloadAndInstallApk(apkAsset.browser_download_url);
         }
+      } else {
+        if (manual) alert(`Найдена версия ${latestVersion}, но APK файл релиза не найден.`);
       }
+    } else {
+      if (manual) alert(`У вас установлена последняя актуальная версия (${currentVersion}).`);
     }
   } catch (e) {
     console.error("Failed to check for app updates:", e);
+    if (manual) alert("Произошла ошибка при проверке обновлений.");
   }
 }
 
