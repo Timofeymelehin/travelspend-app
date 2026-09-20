@@ -46,6 +46,7 @@ export interface Trip {
   useManualRate: boolean;
   totalBudgetBase: number; // Budget in base currency
   travelersCount: number;  // For per-person breakdown
+  tripType?: 'travel' | 'home'; // 'travel' for vacation/trip, 'home' for everyday living
   items: ExpenseItem[];
 }
 

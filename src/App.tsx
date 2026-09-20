@@ -20,6 +20,7 @@ import { TripsSettingsView } from './components/views/TripsSettingsView';
 import { LockScreen } from './components/LockScreen';
 import { SecurityModal } from './components/SecurityModal';
 import { InstallGuideModal } from './components/InstallGuideModal';
+import { SetupTripModal } from './components/SetupTripModal';
 import {
   SecuritySettings,
   loadSecuritySettings,
@@ -31,6 +32,7 @@ import { checkForAppUpdates } from './services/updateService';
 
 const STORAGE_KEY_TRIPS = 'travelspend_trips_v2';
 const STORAGE_KEY_ACTIVE_TRIP = 'travelspend_active_trip_id_v2';
+const STORAGE_KEY_ONBOARDING_DONE = 'travelspend_initial_setup_done_v2';
 
 export default function App() {
   // Check for app updates on mount
@@ -141,6 +143,24 @@ export default function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseItem | null>(null);
 
+  // Initial Onboarding Setup Modal State (user chooses between Home and Travel on first launch)
+  const [isFirstLaunchSetupOpen, setIsFirstLaunchSetupOpen] = useState<boolean>(() => {
+    try {
+      const isDone = localStorage.getItem(STORAGE_KEY_ONBOARDING_DONE);
+      if (isDone) return false;
+      // If user only has the default empty trip with 0 items, offer initial setup
+      const savedTrips = localStorage.getItem(STORAGE_KEY_TRIPS);
+      if (!savedTrips) return true;
+      const parsed = JSON.parse(savedTrips);
+      if (Array.isArray(parsed) && parsed.length === 1 && parsed[0].id === DEFAULT_EMPTY_TRIP.id && parsed[0].items.length === 0) {
+        return true;
+      }
+    } catch {
+      // ignore
+    }
+    return false;
+  });
+
   // Active Trip Object
   const currentTrip = useMemo(() => {
     return trips.find((t) => t.id === activeTripId) || trips[0] || DEFAULT_JAPAN_TRIP;
@@ -236,6 +256,24 @@ export default function App() {
     setTrips((prev) => [...prev, newTrip]);
     setActiveTripId(newTrip.id);
     setActiveTab('table');
+  };
+
+  const handleSetupInitialTrip = (chosenTrip: Trip) => {
+    // If the only trip was the empty placeholder, replace it with the user's chosen trip
+    setTrips((prev) => {
+      const isOnlyEmpty = prev.length === 1 && prev[0].id === DEFAULT_EMPTY_TRIP.id && prev[0].items.length === 0;
+      if (isOnlyEmpty) {
+        return [chosenTrip];
+      }
+      return [chosenTrip, ...prev];
+    });
+    setActiveTripId(chosenTrip.id);
+    setIsFirstLaunchSetupOpen(false);
+    try {
+      localStorage.setItem(STORAGE_KEY_ONBOARDING_DONE, 'true');
+    } catch {
+      // ignore
+    }
   };
 
   const handleResetToJapan = () => {
@@ -385,6 +423,12 @@ export default function App() {
           setIsInstallGuideOpen(false);
           install();
         }}
+      />
+
+      {/* First Launch Selection Modal (Home vs Travel) */}
+      <SetupTripModal
+        isOpen={isFirstLaunchSetupOpen}
+        onSelectOption={handleSetupInitialTrip}
       />
     </div>
   );

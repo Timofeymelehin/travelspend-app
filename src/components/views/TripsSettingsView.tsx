@@ -23,6 +23,7 @@ import {
   Smartphone,
   KeyRound,
   Trash2,
+  Home,
 } from 'lucide-react';
 
 interface TripsSettingsViewProps {
@@ -65,6 +66,19 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
   const [travelersCount, setTravelersCount] = useState(currentTrip.travelersCount.toString());
   const [startDate, setStartDate] = useState(currentTrip.startDate);
   const [endDate, setEndDate] = useState(currentTrip.endDate);
+
+  // Sync internal form state when active trip changes
+  React.useEffect(() => {
+    setName(currentTrip.name);
+    setDestination(currentTrip.destination);
+    setFlag(currentTrip.flag || '✈️');
+    setBaseCurrency(currentTrip.baseCurrency);
+    setLocalCurrency(currentTrip.localCurrency);
+    setTotalBudget(currentTrip.totalBudgetBase.toString());
+    setTravelersCount(currentTrip.travelersCount.toString());
+    setStartDate(currentTrip.startDate);
+    setEndDate(currentTrip.endDate);
+  }, [currentTrip.id]);
 
   const [isSavedNotice, setIsSavedNotice] = useState(false);
   const [showNewTripModal, setShowNewTripModal] = useState(false);
@@ -127,10 +141,30 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
     e.target.value = '';
   };
 
-  const handleCreateNewTrip = (preset: 'japan' | 'thailand' | 'turkey' | 'dubai' | 'europe' | 'custom') => {
+  const handleCreateNewTrip = (preset: 'home' | 'japan' | 'thailand' | 'turkey' | 'dubai' | 'europe' | 'custom') => {
     let newTrip: Trip;
 
-    if (preset === 'japan') {
+    if (preset === 'home') {
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+      newTrip = {
+        id: `trip-${Date.now()}`,
+        name: 'Расходы дома (каждый день)',
+        destination: 'Россия (Дом) 🇷🇺',
+        flag: '🏠',
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+        baseCurrency: 'RUB',
+        localCurrency: 'RUB',
+        customExchangeRate: 1,
+        useManualRate: true,
+        totalBudgetBase: 60000,
+        travelersCount: 1,
+        tripType: 'home',
+        items: [],
+      };
+    } else if (preset === 'japan') {
       newTrip = {
         id: `trip-${Date.now()}`,
         name: 'Поездка в Японию (Токио, Киото)',
@@ -597,7 +631,7 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
           </h3>
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-              v1.1.0
+              v1.2.0
             </span>
             <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
               GitHub OTA
@@ -633,6 +667,20 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
             </p>
 
             <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              <button
+                onClick={() => handleCreateNewTrip('home')}
+                className="w-full p-2.5 rounded-2xl bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-500/40 flex items-center gap-3 text-left transition"
+              >
+                <span className="text-2xl">🏠</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>Расходы дома (каждый день)</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-normal">Дом</span>
+                  </h4>
+                  <p className="text-[11px] text-indigo-300">Продукты, жилье, авто, кафе, здоровье</p>
+                </div>
+              </button>
+
               <button
                 onClick={() => handleCreateNewTrip('japan')}
                 className="w-full p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-750 flex items-center gap-3 text-left transition"

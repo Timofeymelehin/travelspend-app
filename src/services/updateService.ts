@@ -49,7 +49,7 @@ export async function checkForAppUpdates(manual = false) {
   }
 
   try {
-    let currentVersion = "1.1.0";
+    let currentVersion = "1.2.0";
     try {
       if (Capacitor.isNativePlatform()) {
         const appInfo = await App.getInfo();
@@ -58,7 +58,7 @@ export async function checkForAppUpdates(manual = false) {
         }
       }
     } catch {
-      currentVersion = "1.1.0";
+      currentVersion = "1.2.0";
     }
 
     const repoOwner = "Timofeymelehin";

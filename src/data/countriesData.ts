@@ -29,6 +29,63 @@ export interface CountryPriceInfo {
 }
 
 export const COUNTRIES_PRICE_DATA: Record<string, CountryPriceInfo> = {
+  RU: {
+    countryCode: 'RU',
+    countryName: 'Россия (Дом)',
+    flag: '🇷🇺',
+    currencyCode: 'RUB',
+    currencySymbol: '₽',
+    defaultCities: ['Москва', 'Санкт-Петербург', 'Казань', 'Сочи', 'Екатеринбург', 'Новосибирск'],
+    cheatSheet: [
+      { item: 'Кофе на вынос (капучино/латте)', priceLocal: 220, icon: '☕', category: 'food', timeOfDay: 'morning' },
+      { item: 'Сырники или круассан на завтрак', priceLocal: 280, icon: '🥐', category: 'food', timeOfDay: 'morning' },
+      { item: 'Бизнес-ланч в кафе / столовой', priceLocal: 450, icon: '🍲', category: 'food', timeOfDay: 'day' },
+      { item: 'Продукты в супермаркете (корзина дня)', priceLocal: 1200, icon: '🛒', category: 'food', timeOfDay: 'day' },
+      { item: 'Ужин в ресторане на одного', priceLocal: 1600, icon: '🍽️', category: 'food', timeOfDay: 'night' },
+      { item: 'Поездка на метро / автобусе (Тройка)', priceLocal: 57, icon: '🚇', category: 'transport', timeOfDay: 'all' },
+      { item: 'Поездка на такси по городу', priceLocal: 450, icon: '🚕', category: 'transport', timeOfDay: 'night' },
+      { item: 'Доставка еды (Яндекс/Самокат)', priceLocal: 850, icon: '🥡', category: 'food', timeOfDay: 'night' },
+      { item: 'Коммунальные услуги / ЖКУ в месяц', priceLocal: 6500, icon: '🏠', category: 'stay', timeOfDay: 'all' },
+      { item: 'Билет в кино / на выставку', priceLocal: 550, icon: '🎬', category: 'sightseeing', timeOfDay: 'day' },
+    ],
+    quickSuggestions: [
+      { title: 'Супермаркет (продукты)', cat: 'food', amountLocal: 1500, timeOfDay: 'day' },
+      { title: 'Кофе с собой', cat: 'food', amountLocal: 220, timeOfDay: 'morning' },
+      { title: 'Обед / Бизнес-ланч', cat: 'food', amountLocal: 450, timeOfDay: 'day' },
+      { title: 'Поездка на такси', cat: 'transport_local', amountLocal: 480, timeOfDay: 'night' },
+      { title: 'Метро / Общественный транспорт', cat: 'transport_local', amountLocal: 57, timeOfDay: 'all' },
+      { title: 'Доставка еды / Ужин', cat: 'food', amountLocal: 950, timeOfDay: 'night' },
+      { title: 'Аптека / Здоровье', cat: 'health', amountLocal: 650, timeOfDay: 'day' },
+      { title: 'ЖКУ / Квартплата', cat: 'home_bills', amountLocal: 6000, timeOfDay: 'all' },
+      { title: 'Покупки для дома / Одежда', cat: 'shopping', amountLocal: 2500, timeOfDay: 'day' },
+    ],
+  },
+  KZ: {
+    countryCode: 'KZ',
+    countryName: 'Казахстан',
+    flag: '🇰🇿',
+    currencyCode: 'KZT',
+    currencySymbol: '₸',
+    defaultCities: ['Алматы', 'Астана', 'Шымкент'],
+    cheatSheet: [
+      { item: 'Кофе на вынос в кофейне', priceLocal: 1200, icon: '☕', category: 'food', timeOfDay: 'morning' },
+      { item: 'Самса / баурсаки на перекус', priceLocal: 500, icon: '🥟', category: 'food', timeOfDay: 'morning' },
+      { item: 'Бизнес-ланч / лагман на обед', priceLocal: 2800, icon: '🍜', category: 'food', timeOfDay: 'day' },
+      { item: 'Продукты в Magnum / Small', priceLocal: 6500, icon: '🛒', category: 'food', timeOfDay: 'day' },
+      { item: 'Ужин с бешбармаком в ресторане', priceLocal: 8000, icon: '🥩', category: 'food', timeOfDay: 'night' },
+      { item: 'Проезд на автобусе / метро (Onay)', priceLocal: 120, icon: '🚌', category: 'transport', timeOfDay: 'all' },
+      { item: 'Яндекс Такси по городу', priceLocal: 1800, icon: '🚕', category: 'transport', timeOfDay: 'night' },
+      { item: 'Канатная дорога на Кок-Тобе', priceLocal: 3500, icon: '🚡', category: 'sightseeing', timeOfDay: 'day' },
+    ],
+    quickSuggestions: [
+      { title: 'Супермаркет (Magnum)', cat: 'food', amountLocal: 6500, timeOfDay: 'day' },
+      { title: 'Кофе и выпечка', cat: 'food', amountLocal: 1500, timeOfDay: 'morning' },
+      { title: 'Обед (лагман/плов)', cat: 'food', amountLocal: 2800, timeOfDay: 'day' },
+      { title: 'Яндекс Такси', cat: 'transport_local', amountLocal: 1800, timeOfDay: 'all' },
+      { title: 'Пополнение карты Оңай', cat: 'transport_local', amountLocal: 2000, timeOfDay: 'all' },
+      { title: 'Аптека', cat: 'health', amountLocal: 3500, timeOfDay: 'day' },
+    ],
+  },
   JP: {
     countryCode: 'JP',
     countryName: 'Япония',
@@ -314,6 +371,8 @@ export function detectCountryCode(destination: string, currency: string): string
   const d = destination.toLowerCase();
   const c = currency.toUpperCase();
 
+  if (d.includes('росси') || d.includes('russia') || d.includes('москв') || d.includes('дом') || d.includes('ежедневн') || c === 'RUB') return 'RU';
+  if (d.includes('казах') || d.includes('kazakhstan') || d.includes('алмат') || d.includes('астан') || c === 'KZT') return 'KZ';
   if (d.includes('япон') || d.includes('japan') || d.includes('токио') || c === 'JPY') return 'JP';
   if (d.includes('таиланд') || d.includes('thailand') || d.includes('тай') || d.includes('пхукет') || c === 'THB') return 'TH';
   if (d.includes('турци') || d.includes('turkey') || d.includes('стамбул') || c === 'TRY') return 'TR';

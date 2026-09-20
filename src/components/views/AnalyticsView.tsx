@@ -161,12 +161,14 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ trip, exchangeRate
           <div className="text-2xl font-black text-white tracking-tight">
             {formatCurrency(totalSpentBase, trip.baseCurrency, { isMasked: maskAmounts })}
           </div>
-          <div className="text-xs font-semibold text-slate-400 mt-1 flex items-center gap-1">
-            <span>Эквивалент:</span>
-            <span className="text-indigo-300 font-mono">
-              {formatCurrency(totalSpentLocal, trip.localCurrency, { isMasked: maskAmounts })}
-            </span>
-          </div>
+          {trip.baseCurrency !== trip.localCurrency && (
+            <div className="text-xs font-semibold text-slate-400 mt-1 flex items-center gap-1">
+              <span>Эквивалент:</span>
+              <span className="text-indigo-300 font-mono">
+                {formatCurrency(totalSpentLocal, trip.localCurrency, { isMasked: maskAmounts })}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Per Person Card */}
@@ -180,12 +182,14 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ trip, exchangeRate
           <div className="text-2xl font-black text-white tracking-tight">
             {formatCurrency(perPersonBase, trip.baseCurrency, { isMasked: maskAmounts })}
           </div>
-          <div className="text-xs font-semibold text-slate-400 mt-1 flex items-center gap-1">
-            <span>В иенах:</span>
-            <span className="text-sky-300 font-mono">
-              {formatCurrency(perPersonLocal, trip.localCurrency, { isMasked: maskAmounts })}
-            </span>
-          </div>
+          {trip.baseCurrency !== trip.localCurrency && (
+            <div className="text-xs font-semibold text-slate-400 mt-1 flex items-center gap-1">
+              <span>В {trip.localCurrency}:</span>
+              <span className="text-sky-300 font-mono">
+                {formatCurrency(perPersonLocal, trip.localCurrency, { isMasked: maskAmounts })}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Budget Status Card */}
@@ -193,7 +197,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ trip, exchangeRate
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="text-slate-400 flex items-center gap-1.5">
               <Award className="w-4 h-4 text-amber-400" />
-              Бюджет поездки ({formatCurrency(trip.totalBudgetBase, trip.baseCurrency, { isMasked: maskAmounts })})
+              {trip.tripType === 'home' ? 'Лимит на месяц' : 'Бюджет поездки'} ({formatCurrency(trip.totalBudgetBase, trip.baseCurrency, { isMasked: maskAmounts })})
             </span>
             <span
               className={`text-xs font-bold px-2 py-0.5 rounded-full ${
