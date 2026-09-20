@@ -27,6 +27,7 @@ export interface ExpenseItem {
   date: string;           // YYYY-MM-DD
   paymentMethod: PaymentMethod;
   locationCity?: string;
+  countryCode?: string;   // Country code for expense (e.g. 'JP', 'TH', 'TR')
   notes?: string;
   isPlanned?: boolean;    // true if future planned, false if already spent
   paidBy?: string;        // Who paid (for group travel)

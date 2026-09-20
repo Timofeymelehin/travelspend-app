@@ -1,5 +1,21 @@
 import { Trip } from '../types';
 
+export const DEFAULT_EMPTY_TRIP: Trip = {
+  id: 'trip-empty-initial',
+  name: 'Моя поездка',
+  destination: 'Япония',
+  flag: '🇯🇵',
+  startDate: new Date().toISOString().slice(0, 10),
+  endDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+  baseCurrency: 'RUB',
+  localCurrency: 'JPY',
+  customExchangeRate: 0.61,
+  useManualRate: false,
+  totalBudgetBase: 100000,
+  travelersCount: 1,
+  items: [],
+};
+
 // Baseline exchange rate: ~1 JPY = 0.61 RUB (approx 100 JPY = 61 RUB)
 export const DEFAULT_JAPAN_TRIP: Trip = {
   id: 'trip-japan-2026',

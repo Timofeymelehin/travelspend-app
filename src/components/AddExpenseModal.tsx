@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { ExpenseItem, PaymentMethod } from '../types';
 import { CATEGORIES } from '../data/categories';
 import { CategoryIcon } from './CategoryIcon';
-import { X, Calendar, MapPin, AlignLeft, Sparkles, Check } from 'lucide-react';
+import { X, Calendar, MapPin, AlignLeft, Sparkles, Check, Globe } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
+import {
+  COUNTRIES_PRICE_DATA,
+  getCurrentTimeOfDay,
+  detectCountryCode,
+} from '../data/countriesData';
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -13,18 +18,9 @@ interface AddExpenseModalProps {
   baseCurrency: string;
   localCurrency: string;
   exchangeRate: number; // 1 local = X base
+  tripDestination?: string;
+  tripFlag?: string;
 }
-
-const QUICK_SUGGESTIONS = [
-  { title: 'Рамэн', cat: 'food', defaultYen: 1200 },
-  { title: 'Пополнение карты Suica', cat: 'transport_local', defaultYen: 3000 },
-  { title: 'Онигири и кофе в 7-Eleven', cat: 'food', defaultYen: 650 },
-  { title: 'Билеты в метро', cat: 'transport_local', defaultYen: 350 },
-  { title: 'Автомат Jihanki (напиток)', cat: 'misc', defaultYen: 160 },
-  { title: 'Сувениры Don Quijote', cat: 'shopping', defaultYen: 5500 },
-  { title: 'Ужин в Идзакае', cat: 'food', defaultYen: 4500 },
-  { title: 'Входной билет в храм', cat: 'sightseeing', defaultYen: 600 },
-];
 
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   isOpen,
@@ -34,17 +30,27 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   baseCurrency,
   localCurrency,
   exchangeRate,
+  tripDestination = '',
+  tripFlag = '✈️',
 }) => {
+  // Determine default country
+  const initialCountryCode = detectCountryCode(tripDestination, localCurrency);
+  const [selectedCountry, setSelectedCountry] = useState<string>(initialCountryCode);
+
+  const countryInfo = COUNTRIES_PRICE_DATA[selectedCountry] || COUNTRIES_PRICE_DATA.JP;
+  const timeOfDay = getCurrentTimeOfDay();
+
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('food');
   const [amountInput, setAmountInput] = useState('');
   const [inputCurrency, setInputCurrency] = useState<'local' | 'base'>('local');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [city, setCity] = useState('Токио');
+  const [city, setCity] = useState(countryInfo.defaultCities[0] || 'Токио');
   const [notes, setNotes] = useState('');
   const [paidBy, setPaidBy] = useState('');
 
+  // When modal opens or editing item changes
   useEffect(() => {
     if (editingItem) {
       setTitle(editingItem.title);
@@ -53,23 +59,37 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       setInputCurrency('local');
       setPaymentMethod(editingItem.paymentMethod);
       setDate(editingItem.date);
-      setCity(editingItem.locationCity || 'Токио');
+      setCity(editingItem.locationCity || '');
       setNotes(editingItem.notes || '');
       setPaidBy(editingItem.paidBy || '');
+      if (editingItem.countryCode && COUNTRIES_PRICE_DATA[editingItem.countryCode]) {
+        setSelectedCountry(editingItem.countryCode);
+      }
     } else {
+      const defaultC = detectCountryCode(tripDestination, localCurrency);
+      setSelectedCountry(defaultC);
+      const cInfo = COUNTRIES_PRICE_DATA[defaultC] || COUNTRIES_PRICE_DATA.JP;
       setTitle('');
       setCategory('food');
       setAmountInput('');
       setInputCurrency('local');
       setPaymentMethod('card');
       setDate(new Date().toISOString().slice(0, 10));
-      setCity('Токио');
+      setCity(cInfo.defaultCities[0] || '');
       setNotes('');
       setPaidBy('');
     }
-  }, [editingItem, isOpen]);
+  }, [editingItem, isOpen, tripDestination, localCurrency]);
 
   if (!isOpen) return null;
+
+  const handleCountryChange = (cCode: string) => {
+    setSelectedCountry(cCode);
+    const targetC = COUNTRIES_PRICE_DATA[cCode];
+    if (targetC && targetC.defaultCities.length > 0) {
+      setCity(targetC.defaultCities[0]);
+    }
+  };
 
   const numericAmount = parseFloat(amountInput) || 0;
 
@@ -99,6 +119,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       date,
       paymentMethod,
       locationCity: city.trim() || undefined,
+      countryCode: selectedCountry,
       notes: notes.trim() || undefined,
       paidBy: paidBy.trim() || undefined,
     };
@@ -107,12 +128,21 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     onClose();
   };
 
-  const handleSuggestion = (sug: typeof QUICK_SUGGESTIONS[0]) => {
+  const handleSuggestion = (sug: { title: string; cat: string; amountLocal: number }) => {
     setTitle(sug.title);
     setCategory(sug.cat);
-    setAmountInput(sug.defaultYen.toString());
+    setAmountInput(sug.amountLocal.toString());
     setInputCurrency('local');
   };
+
+  // Filter or prioritize suggestions matching current time of day
+  const suggestions = [...countryInfo.quickSuggestions].sort((a, b) => {
+    if (a.timeOfDay === timeOfDay && b.timeOfDay !== timeOfDay) return -1;
+    if (b.timeOfDay === timeOfDay && a.timeOfDay !== timeOfDay) return 1;
+    return 0;
+  });
+
+  const timeLabel = timeOfDay === 'morning' ? 'Утро ☕' : timeOfDay === 'day' ? 'День ☀️' : 'Вечер 🌙';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto animate-fadeIn">
@@ -132,22 +162,63 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4">
-          {/* Quick presets for Japan trips */}
+          {/* Country Selection Chips */}
+          <div>
+            <div className="flex items-center justify-between text-xs text-slate-300 mb-1.5 font-semibold">
+              <span className="flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                Страна расхода
+              </span>
+              <span className="text-[11px] text-slate-400 font-normal">
+                {countryInfo.countryName} ({countryInfo.currencyCode})
+              </span>
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {Object.values(COUNTRIES_PRICE_DATA).map((c) => {
+                const isSelected = selectedCountry === c.countryCode;
+                return (
+                  <button
+                    key={c.countryCode}
+                    type="button"
+                    onClick={() => handleCountryChange(c.countryCode)}
+                    className={`shrink-0 px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
+                        : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700/60'
+                    }`}
+                  >
+                    <span>{c.flag}</span>
+                    <span>{c.countryName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Quick presets adaptive to country and time */}
           {!editingItem && (
             <div>
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-2">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Быстрый выбор типичных трат:</span>
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Популярные траты для {countryInfo.flag} {countryInfo.countryName}:</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-amber-300 font-medium border border-slate-700">
+                  {timeLabel}
+                </span>
               </div>
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                {QUICK_SUGGESTIONS.map((sug) => (
+                {suggestions.map((sug) => (
                   <button
                     key={sug.title}
                     type="button"
                     onClick={() => handleSuggestion(sug)}
-                    className="shrink-0 px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700/60 active:scale-95 transition"
+                    className="shrink-0 px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700/60 active:scale-95 transition flex items-center gap-1"
                   >
-                    {sug.title}
+                    <span>{sug.title}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      ~{sug.amountLocal} {countryInfo.currencySymbol}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -164,7 +235,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Например: Рамэн в Итиран, Синкансэн, Отель..."
+              placeholder={`Например: Обед в кафе, Метро, Сувениры...`}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
             />
           </div>
@@ -267,10 +338,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { id: 'cash', label: 'Наличные 💴' },
+                { id: 'cash', label: 'Наличные 💵' },
                 { id: 'card', label: 'Карта 💳' },
-                { id: 'transit_card', label: 'Suica/IC 🚆' },
-                { id: 'prepaid', label: 'Онлайн 💻' },
+                { id: 'transit_card', label: 'Транспортная карта 🚆' },
+                { id: 'prepaid', label: 'Онлайн / Бронь 💻' },
               ].map((pm) => (
                 <button
                   key={pm.id}
@@ -288,7 +359,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             </div>
           </div>
 
-          {/* Date and City */}
+          {/* Date and City with Quick City Suggestions */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
@@ -303,17 +374,38 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                Город / Локация
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  Город / Локация
+                </label>
+              </div>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="Токио, Киото, Осака..."
+                placeholder="Город..."
                 className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
               />
+              {/* Quick city chips for selected country */}
+              {countryInfo.defaultCities.length > 0 && (
+                <div className="flex gap-1 overflow-x-auto mt-1.5 pb-0.5 scrollbar-none">
+                  {countryInfo.defaultCities.map((cName) => (
+                    <button
+                      key={cName}
+                      type="button"
+                      onClick={() => setCity(cName)}
+                      className={`text-[10px] px-2 py-0.5 rounded-md border transition shrink-0 ${
+                        city === cName
+                          ? 'bg-indigo-600/40 border-indigo-500 text-white'
+                          : 'bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {cName}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -327,7 +419,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Например: Tax-Free 10%, ужин с друзьями, билеты на 17:00"
+              placeholder="Например: сувениры, чек из кафе, такси до аэропорта..."
               className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
           </div>

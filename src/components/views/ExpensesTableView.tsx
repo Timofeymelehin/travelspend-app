@@ -4,6 +4,7 @@ import { CATEGORIES } from '../../data/categories';
 import { CategoryIcon, PaymentMethodBadge } from '../CategoryIcon';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { exportExpensesToCSV } from '../../utils/csvHelper';
+import { COUNTRIES_PRICE_DATA } from '../../data/countriesData';
 import {
   Search,
   Filter,
@@ -262,6 +263,11 @@ export const ExpensesTableView: React.FC<ExpensesTableViewProps> = ({
                               {item.title}
                             </div>
                             <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mt-0.5">
+                              {item.countryCode && COUNTRIES_PRICE_DATA[item.countryCode] && (
+                                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700 font-medium shrink-0">
+                                  {COUNTRIES_PRICE_DATA[item.countryCode].flag} {COUNTRIES_PRICE_DATA[item.countryCode].countryName}
+                                </span>
+                              )}
                               <span
                                 className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium leading-normal shrink-0"
                                 style={{ backgroundColor: `${cat.color}18`, color: cat.color }}
@@ -334,8 +340,27 @@ export const ExpensesTableView: React.FC<ExpensesTableViewProps> = ({
                   })
                 ) : (
                   <tr>
-                    <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">
-                      По вашему запросу ничего не найдено
+                    <td colSpan={4} className="py-12 px-4 text-center">
+                      <div className="max-w-xs mx-auto space-y-2.5">
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto">
+                          <Plus className="w-5 h-5" />
+                        </div>
+                        <p className="text-xs font-semibold text-white">Расходов пока нет</p>
+                        <p className="text-[11px] text-slate-400">
+                          {trip.items.length === 0
+                            ? 'Нажмите кнопку ниже, чтобы внести первый расход в поездке'
+                            : 'По заданному фильтру ничего не найдено'}
+                        </p>
+                        {trip.items.length === 0 && (
+                          <button
+                            onClick={onOpenAddModal}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow transition"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Добавить первый расход</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -367,6 +392,12 @@ export const ExpensesTableView: React.FC<ExpensesTableViewProps> = ({
                           {item.title}
                         </h4>
                         <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                          {item.countryCode && COUNTRIES_PRICE_DATA[item.countryCode] && (
+                            <>
+                              <span>{COUNTRIES_PRICE_DATA[item.countryCode].flag} {COUNTRIES_PRICE_DATA[item.countryCode].countryName}</span>
+                              <span>•</span>
+                            </>
+                          )}
                           <span>{formatDate(item.date)}</span>
                           {item.locationCity && (
                             <>
@@ -414,8 +445,27 @@ export const ExpensesTableView: React.FC<ExpensesTableViewProps> = ({
               );
             })
           ) : (
-            <div className="py-12 text-center text-slate-400 text-xs bg-slate-900 rounded-2xl border border-slate-800">
-              Ничего не найдено
+            <div className="py-12 px-4 text-center bg-slate-900 rounded-2xl border border-slate-800">
+              <div className="max-w-xs mx-auto space-y-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <p className="text-xs font-semibold text-white">Расходов пока нет</p>
+                <p className="text-[11px] text-slate-400">
+                  {trip.items.length === 0
+                    ? 'Нажмите кнопку ниже, чтобы внести первый расход в поездке'
+                    : 'По заданному фильтру ничего не найдено'}
+                </p>
+                {trip.items.length === 0 && (
+                  <button
+                    onClick={onOpenAddModal}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Добавить первый расход</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

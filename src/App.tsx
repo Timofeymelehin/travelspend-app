@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Trip, ExpenseItem, ExchangeRatesState } from './types';
-import { DEFAULT_JAPAN_TRIP } from './data/sampleJapanTrip';
+import { DEFAULT_JAPAN_TRIP, DEFAULT_EMPTY_TRIP } from './data/sampleJapanTrip';
 import { fetchExchangeRates, getDirectRate } from './services/currencyService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { usePWAInstall } from './hooks/usePWAInstall';
@@ -111,7 +111,8 @@ export default function App() {
     } catch (e) {
       console.error('Error loading trips from storage:', e);
     }
-    return [DEFAULT_JAPAN_TRIP];
+    // Fresh install starts with a completely empty trip (0 expenses)
+    return [DEFAULT_EMPTY_TRIP];
   });
 
   const [activeTripId, setActiveTripId] = useState<string>(() => {
@@ -121,7 +122,7 @@ export default function App() {
     } catch {
       // ignore
     }
-    return DEFAULT_JAPAN_TRIP.id;
+    return DEFAULT_EMPTY_TRIP.id;
   });
 
   // Active Tab
@@ -245,6 +246,12 @@ export default function App() {
     setActiveTripId(DEFAULT_JAPAN_TRIP.id);
   };
 
+  const handleClearAllExpenses = () => {
+    setTrips((prev) =>
+      prev.map((t) => (t.id === currentTrip.id ? { ...t, items: [] } : t))
+    );
+  };
+
   const handleUpdateManualRate = (newRate: number, useManual: boolean) => {
     const updated: Trip = {
       ...currentTrip,
@@ -323,6 +330,7 @@ export default function App() {
             onUpdateTrip={handleUpdateTrip}
             onCreateTrip={handleCreateTrip}
             onResetToJapanPreset={handleResetToJapan}
+            onClearAllExpenses={handleClearAllExpenses}
             onRefreshRates={loadRates}
             isRefreshingRates={isRefreshingRates}
             ratesLastUpdated={exchangeState.lastUpdated}
@@ -356,6 +364,8 @@ export default function App() {
         baseCurrency={currentTrip.baseCurrency}
         localCurrency={currentTrip.localCurrency}
         exchangeRate={currentExchangeRate}
+        tripDestination={currentTrip.destination}
+        tripFlag={currentTrip.flag}
       />
 
       {/* Security & PIN Settings Modal */}

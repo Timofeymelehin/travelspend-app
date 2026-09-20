@@ -22,6 +22,7 @@ import {
   Shield,
   Smartphone,
   KeyRound,
+  Trash2,
 } from 'lucide-react';
 
 interface TripsSettingsViewProps {
@@ -31,6 +32,7 @@ interface TripsSettingsViewProps {
   onUpdateTrip: (updated: Trip) => void;
   onCreateTrip: (newTrip: Trip) => void;
   onResetToJapanPreset: () => void;
+  onClearAllExpenses?: () => void;
   onRefreshRates: () => void;
   isRefreshingRates: boolean;
   ratesLastUpdated: string;
@@ -46,6 +48,7 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
   onUpdateTrip,
   onCreateTrip,
   onResetToJapanPreset,
+  onClearAllExpenses,
   onRefreshRates,
   isRefreshingRates,
   ratesLastUpdated,
@@ -124,35 +127,69 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
     e.target.value = '';
   };
 
-  const handleCreateNewTrip = (preset: 'thailand' | 'europe' | 'turkey' | 'custom') => {
+  const handleCreateNewTrip = (preset: 'japan' | 'thailand' | 'turkey' | 'dubai' | 'europe' | 'custom') => {
     let newTrip: Trip;
 
-    if (preset === 'thailand') {
+    if (preset === 'japan') {
+      newTrip = {
+        id: `trip-${Date.now()}`,
+        name: 'Поездка в Японию (Токио, Киото)',
+        destination: 'Япония 🇯🇵',
+        flag: '🇯🇵',
+        startDate: new Date().toISOString().slice(0, 10),
+        endDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+        baseCurrency: 'RUB',
+        localCurrency: 'JPY',
+        customExchangeRate: 0.61,
+        useManualRate: false,
+        totalBudgetBase: 300000,
+        travelersCount: 2,
+        items: [],
+      };
+    } else if (preset === 'thailand') {
       newTrip = {
         id: `trip-${Date.now()}`,
         name: 'Поездка в Таиланд (Бангкок, Пхукет)',
         destination: 'Таиланд 🇹🇭',
         flag: '🇹🇭',
-        startDate: '2026-11-01',
-        endDate: '2026-11-14',
+        startDate: new Date().toISOString().slice(0, 10),
+        endDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
         baseCurrency: 'RUB',
         localCurrency: 'THB',
         useManualRate: false,
         totalBudgetBase: 250000,
         travelersCount: 2,
-        items: [
-          {
-            id: `th-1`,
-            title: 'Авиабилеты в Бангкок',
-            category: 'transport_flight',
-            amountOriginal: 38000,
-            currencyOriginal: 'THB',
-            amountBase: 95000,
-            date: '2026-11-01',
-            paymentMethod: 'prepaid',
-            locationCity: 'Бангкок',
-          },
-        ],
+        items: [],
+      };
+    } else if (preset === 'turkey') {
+      newTrip = {
+        id: `trip-${Date.now()}`,
+        name: 'Поездка в Турцию (Стамбул, Анталья)',
+        destination: 'Турция 🇹🇷',
+        flag: '🇹🇷',
+        startDate: new Date().toISOString().slice(0, 10),
+        endDate: new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10),
+        baseCurrency: 'RUB',
+        localCurrency: 'TRY',
+        useManualRate: false,
+        totalBudgetBase: 200000,
+        travelersCount: 2,
+        items: [],
+      };
+    } else if (preset === 'dubai') {
+      newTrip = {
+        id: `trip-${Date.now()}`,
+        name: 'Поездка в ОАЭ (Дубай)',
+        destination: 'ОАЭ 🇦🇪',
+        flag: '🇦🇪',
+        startDate: new Date().toISOString().slice(0, 10),
+        endDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+        baseCurrency: 'RUB',
+        localCurrency: 'AED',
+        useManualRate: false,
+        totalBudgetBase: 300000,
+        travelersCount: 2,
+        items: [],
       };
     } else if (preset === 'europe') {
       newTrip = {
@@ -160,8 +197,8 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
         name: 'Евротур (Рим, Париж, Барселона)',
         destination: 'Европа 🇪🇺',
         flag: '🇪🇺',
-        startDate: '2026-09-10',
-        endDate: '2026-09-24',
+        startDate: new Date().toISOString().slice(0, 10),
+        endDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
         baseCurrency: 'RUB',
         localCurrency: 'EUR',
         useManualRate: false,
@@ -513,20 +550,40 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
           Все ваши расходы и курсы надежно кэшируются на устройстве. Приложение работает автономно в самолете и роуминге без интернета.
         </p>
 
+        <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="text-xs text-slate-400">
+            Очистить все расходы текущей поездки ({currentTrip.items.length} поз.):
+          </div>
+          {onClearAllExpenses && (
+            <button
+              onClick={() => {
+                if (window.confirm(`Удалить все расходы (${currentTrip.items.length} поз.) в поездке «${currentTrip.name}»? Приложение станет чистым.`)) {
+                  onClearAllExpenses();
+                }
+              }}
+              disabled={currentTrip.items.length === 0}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 disabled:opacity-50 text-slate-300 border border-slate-750 text-xs font-semibold transition active:scale-95 self-start sm:self-auto"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Очистить все расходы</span>
+            </button>
+          )}
+        </div>
+
         <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
           <div className="text-xs text-slate-400">
-            Восстановить исходную таблицу «Затраты в Японии»:
+            Загрузить демонстрационный образец «Затраты в Японии»:
           </div>
           <button
             onClick={() => {
-              if (window.confirm('Сбросить текущую поездку к оригинальной таблице «Затраты в Японии»?')) {
+              if (window.confirm('Загрузить готовую демонстрационную таблицу расходов в Японии?')) {
                 onResetToJapanPreset();
               }
             }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/40 text-rose-300 border border-rose-800/50 text-xs font-semibold transition active:scale-95"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-950/40 hover:bg-indigo-900/40 text-indigo-300 border border-indigo-800/50 text-xs font-semibold transition active:scale-95"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Сбросить к образцу Японии</span>
+            <span>Загрузить демо Японии</span>
           </button>
         </div>
       </div>
@@ -575,10 +632,21 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
               Выберите готовый шаблон страны с настроенной валютой или создайте свой маршрут:
             </p>
 
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              <button
+                onClick={() => handleCreateNewTrip('japan')}
+                className="w-full p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-750 flex items-center gap-3 text-left transition"
+              >
+                <span className="text-2xl">🇯🇵</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Япония (JPY ¥)</h4>
+                  <p className="text-[11px] text-slate-400">Токио, Киото, Осака</p>
+                </div>
+              </button>
+
               <button
                 onClick={() => handleCreateNewTrip('thailand')}
-                className="w-full p-3 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700/80 flex items-center gap-3 text-left transition"
+                className="w-full p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-750 flex items-center gap-3 text-left transition"
               >
                 <span className="text-2xl">🇹🇭</span>
                 <div>
@@ -588,8 +656,30 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
               </button>
 
               <button
+                onClick={() => handleCreateNewTrip('turkey')}
+                className="w-full p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-750 flex items-center gap-3 text-left transition"
+              >
+                <span className="text-2xl">🇹🇷</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Турция (TRY ₺)</h4>
+                  <p className="text-[11px] text-slate-400">Стамбул, Анталья, Каппадокия</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleCreateNewTrip('dubai')}
+                className="w-full p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-750 flex items-center gap-3 text-left transition"
+              >
+                <span className="text-2xl">🇦🇪</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">ОАЭ (AED)</h4>
+                  <p className="text-[11px] text-slate-400">Дубай, Абу-Даби</p>
+                </div>
+              </button>
+
+              <button
                 onClick={() => handleCreateNewTrip('europe')}
-                className="w-full p-3 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700/80 flex items-center gap-3 text-left transition"
+                className="w-full p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-750 flex items-center gap-3 text-left transition"
               >
                 <span className="text-2xl">🇪🇺</span>
                 <div>
@@ -600,7 +690,7 @@ export const TripsSettingsView: React.FC<TripsSettingsViewProps> = ({
 
               <button
                 onClick={() => handleCreateNewTrip('custom')}
-                className="w-full p-3 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700/80 flex items-center gap-3 text-left transition"
+                className="w-full p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-750 flex items-center gap-3 text-left transition"
               >
                 <span className="text-2xl">🌍</span>
                 <div>
