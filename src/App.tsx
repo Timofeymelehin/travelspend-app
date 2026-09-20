@@ -267,9 +267,6 @@ export default function App() {
         />
       )}
 
-      {/* PWA Install Banner */}
-      <PWAInstallBanner />
-
       {/* Offline Toast Notification when network is lost */}
       {!isOnline && (
         <div className="bg-amber-600/90 text-slate-950 font-semibold px-4 py-1 text-center text-xs flex items-center justify-center gap-1.5 shadow-md">
@@ -278,23 +275,8 @@ export default function App() {
         </div>
       )}
 
-      {/* App Header */}
-      <Header
-        currentTrip={currentTrip}
-        isOnline={isOnline}
-        rateText={rateDisplayText}
-        isManualRate={currentTrip.useManualRate}
-        onRefreshRates={loadRates}
-        isRefreshing={isRefreshingRates}
-        onOpenSettings={() => setActiveTab('settings')}
-        onInstallPWA={install}
-        canInstall={isInstallable}
-        isPinEnabled={securitySettings.isPinEnabled}
-        maskAmounts={securitySettings.maskAmounts}
-        onToggleMask={handleToggleMask}
-        onOpenSecurity={() => setIsSecurityModalOpen(true)}
-        onOpenInstallGuide={() => setIsInstallGuideOpen(true)}
-      />
+      {/* App Header (Clean, only trip name) */}
+      <Header currentTrip={currentTrip} />
 
       {/* Main View Area */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-3.5 sm:px-5 py-4">

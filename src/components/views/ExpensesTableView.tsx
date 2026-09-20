@@ -202,50 +202,48 @@ export const ExpensesTableView: React.FC<ExpensesTableViewProps> = ({
       {/* 3. Main Data: Table Mode or Cards Mode */}
       {viewMode === 'table' ? (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="w-full">
+            <table className="w-full table-fixed text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-850 text-slate-300">
+                <tr className="border-b border-slate-800 bg-slate-850 text-slate-300 select-none">
+                  {/* Expense Title & Category */}
                   <th
                     onClick={() => toggleSort('title')}
-                    className="py-3 px-3.5 font-semibold cursor-pointer hover:text-white"
+                    className="py-3 px-2 sm:px-3.5 font-semibold cursor-pointer hover:text-white w-[42%] sm:w-[32%]"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Название расхода</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                      <span>Расход / Категория</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-500 shrink-0" />
                     </div>
                   </th>
-                  <th className="py-3 px-3 font-semibold">Категория</th>
+
+                  {/* Amount: Combined Local & Base on Mobile */}
                   <th
                     onClick={() => toggleSort('amount')}
-                    className="py-3 px-3 font-semibold cursor-pointer hover:text-white text-right"
+                    className="py-3 px-2 sm:px-3 font-semibold cursor-pointer hover:text-white text-right w-[43%] sm:w-[30%]"
                   >
                     <div className="flex items-center justify-end gap-1">
-                      <span>{trip.localCurrency}</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                      <span className="sm:hidden">Сумма</span>
+                      <span className="hidden sm:inline">Сумма ({trip.baseCurrency} / {trip.localCurrency})</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-500 shrink-0" />
                     </div>
                   </th>
-                  <th
-                    onClick={() => toggleSort('amount')}
-                    className="py-3 px-3 font-semibold cursor-pointer hover:text-white text-right"
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      <span>{trip.baseCurrency}</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                    </div>
-                  </th>
-                  <th className="py-3 px-3 font-semibold">Оплата</th>
-                  <th className="py-3 px-3 font-semibold hidden md:table-cell">Город</th>
+
+                  {/* Payment Method & Date (hidden or compact on mobile) */}
                   <th
                     onClick={() => toggleSort('date')}
-                    className="py-3 px-3 font-semibold cursor-pointer hover:text-white"
+                    className="py-3 px-2 sm:px-3 font-semibold cursor-pointer hover:text-white hidden sm:table-cell sm:w-[26%]"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Дата</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                      <span>Оплата / Дата</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-500 shrink-0" />
                     </div>
                   </th>
-                  <th className="py-3 px-3 text-right">Действия</th>
+
+                  {/* Actions */}
+                  <th className="py-3 px-1.5 sm:px-3 text-right w-[15%] sm:w-[12%]">
+                    <span className="sr-only sm:not-sr-only">Действия</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -257,57 +255,64 @@ export const ExpensesTableView: React.FC<ExpensesTableViewProps> = ({
                         key={item.id}
                         className="hover:bg-slate-800/50 transition group"
                       >
-                        {/* Title & Notes */}
-                        <td className="py-2.5 px-3.5 max-w-[200px]">
-                          <div className="font-semibold text-slate-100 truncate">
-                            {item.title}
-                          </div>
-                          {item.notes && (
-                            <div className="text-[11px] text-slate-400 truncate">
-                              {item.notes}
+                        {/* 1. Title, Category, City, Notes & Mobile Sub-info */}
+                        <td className="py-2.5 px-2 sm:px-3.5 align-middle">
+                          <div className="min-w-0 pr-1">
+                            <div className="font-semibold text-slate-100 truncate text-[12px] sm:text-xs leading-snug">
+                              {item.title}
                             </div>
-                          )}
+                            <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mt-0.5">
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium leading-normal shrink-0"
+                                style={{ backgroundColor: `${cat.color}18`, color: cat.color }}
+                              >
+                                <CategoryIcon categoryId={item.category} className="w-2.5 h-2.5" />
+                                <span className="truncate max-w-[80px] sm:max-w-none">{cat.name}</span>
+                              </span>
+                              {item.locationCity && (
+                                <span className="text-[10px] text-slate-400 truncate max-w-[60px] sm:max-w-none">
+                                  {item.locationCity}
+                                </span>
+                              )}
+                              {/* On mobile, show payment & date here compactly */}
+                              <span className="text-[10px] text-slate-400 sm:hidden">
+                                {formatDate(item.date)}
+                              </span>
+                              <span className="sm:hidden">
+                                <PaymentMethodBadge method={item.paymentMethod} />
+                              </span>
+                            </div>
+                            {item.notes && (
+                              <div className="text-[10px] text-slate-400 truncate mt-0.5 hidden sm:block">
+                                {item.notes}
+                              </div>
+                            )}
+                          </div>
                         </td>
 
-                        {/* Category */}
-                        <td className="py-2.5 px-3 whitespace-nowrap">
-                          <span
-                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-medium"
-                            style={{ backgroundColor: `${cat.color}15`, color: cat.color }}
-                          >
-                            <CategoryIcon categoryId={item.category} className="w-3 h-3" />
-                            <span>{cat.name}</span>
-                          </span>
+                        {/* 2. Compact Combined Amount: Base (RUB) prominent, Local (JPY) underneath */}
+                        <td className="py-2.5 px-2 sm:px-3 text-right align-middle">
+                          <div className="font-bold text-white text-[12px] sm:text-xs leading-tight">
+                            {formatCurrency(item.amountBase, trip.baseCurrency, { isMasked: maskAmounts })}
+                          </div>
+                          <div className="text-[10px] sm:text-[11px] text-indigo-300 font-mono leading-tight mt-0.5">
+                            {formatCurrency(item.amountOriginal, trip.localCurrency, { isMasked: maskAmounts })}
+                          </div>
                         </td>
 
-                        {/* Local Amount (JPY) */}
-                        <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-300 whitespace-nowrap">
-                          {formatCurrency(item.amountOriginal, trip.localCurrency, { isMasked: maskAmounts })}
+                        {/* 3. Payment Method & Date (Desktop / Tablet) */}
+                        <td className="py-2.5 px-2 sm:px-3 align-middle hidden sm:table-cell">
+                          <div className="flex items-center gap-2">
+                            <PaymentMethodBadge method={item.paymentMethod} />
+                            <span className="text-slate-400 text-[11px] whitespace-nowrap">
+                              {formatDate(item.date)}
+                            </span>
+                          </div>
                         </td>
 
-                        {/* Base Amount (RUB) */}
-                        <td className="py-2.5 px-3 text-right font-bold text-white whitespace-nowrap">
-                          {formatCurrency(item.amountBase, trip.baseCurrency, { isMasked: maskAmounts })}
-                        </td>
-
-                        {/* Payment Method */}
-                        <td className="py-2.5 px-3 whitespace-nowrap">
-                          <PaymentMethodBadge method={item.paymentMethod} />
-                        </td>
-
-                        {/* City */}
-                        <td className="py-2.5 px-3 text-slate-300 hidden md:table-cell whitespace-nowrap">
-                          {item.locationCity || '—'}
-                        </td>
-
-                        {/* Date */}
-                        <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">
-                          {formatDate(item.date)}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1">
+                        {/* 4. Actions: Edit and Delete */}
+                        <td className="py-2.5 px-1.5 sm:px-3 text-right align-middle">
+                          <div className="flex items-center justify-end gap-0.5 sm:gap-1">
                             <button
                               onClick={() => onEditExpense(item)}
                               className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition"
@@ -329,7 +334,7 @@ export const ExpensesTableView: React.FC<ExpensesTableViewProps> = ({
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400 text-xs">
+                    <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">
                       По вашему запросу ничего не найдено
                     </td>
                   </tr>

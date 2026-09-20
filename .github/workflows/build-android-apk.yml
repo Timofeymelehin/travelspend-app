@@ -1,13 +1,18 @@
-name: Build Android APK
+name: Build & Release Android APK
 
 on:
   push:
     branches: [ main, master ]
+    tags:
+      - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build:
-    name: Build Android APK with Capacitor
+  build-and-release:
+    name: Build & Release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -29,15 +34,12 @@ jobs:
       - name: Install Dependencies
         run: |
           npm ci --legacy-peer-deps || npm install --legacy-peer-deps
-          npm install @capacitor/core @capacitor/android
-          npm install -D @capacitor/cli
 
       - name: Build Web Assets
         run: npm run build
 
-      - name: Initialize & Sync Android Platform
+      - name: Sync Android Platform
         run: |
-          npx cap add android || true
           npx cap sync android
 
       - name: Build Android Debug APK
@@ -46,8 +48,32 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleDebug
 
+      - name: Copy & Rename APK
+        run: |
+          mkdir -p release-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk release-output/TravelSpend-update.apk
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: travelspend-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: travelspend-apk
+          path: release-output/TravelSpend-update.apk
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: ${{ github.ref_name || 'v1.1.0' }}
+          name: Release ${{ github.ref_name || 'v1.1.0' }}
+          body: |
+            ## 🚀 Новое обновление TravelSpend
+            - Автоматическая сборка APK для встроенного авто-апдейтера
+            - Оптимизация таблицы трат под мобильные экраны
+            - Чистый верхний тулбар с заголовком поездки
+            - Поддержка фонового автообновления
+          draft: false
+          prerelease: false
+          files: release-output/TravelSpend-update.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

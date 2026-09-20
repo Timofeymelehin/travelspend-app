@@ -10,8 +10,16 @@ const AppUpdater = registerPlugin<AppUpdaterPlugin>('AppUpdater');
 
 export async function checkForAppUpdates(manual = false) {
   try {
-    const appInfo = await App.getInfo();
-    const currentVersion = appInfo.version; // e.g., "1.0.0"
+    let currentVersion = "1.0.0";
+    try {
+      const appInfo = await App.getInfo();
+      if (appInfo?.version) {
+        currentVersion = appInfo.version;
+      }
+    } catch {
+      // Fallback if not running in native Capacitor runtime
+      currentVersion = "1.0.0";
+    }
 
     const repoOwner = "Timofeymelehin";
     const repoName = "travelspend-app";
