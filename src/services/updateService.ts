@@ -1,6 +1,6 @@
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { registerPlugin } from '@capacitor/core';
 
 interface AppUpdaterPlugin {
   installApk(options: { filePath: string }): Promise<void>;
@@ -9,32 +9,56 @@ interface AppUpdaterPlugin {
 const AppUpdater = registerPlugin<AppUpdaterPlugin>('AppUpdater');
 
 export async function checkForAppUpdates(manual = false) {
+  // If running in browser preview or offline, avoid unnecessary network errors
+  if (!navigator.onLine) {
+    if (manual) {
+      alert("Отсутствует интернет-соединение. Подключитесь к сети для проверки обновлений.");
+    }
+    return;
+  }
+
+  // Automatic check is only intended for the native mobile app (Capacitor), not the web development preview
+  if (!manual && !Capacitor.isNativePlatform()) {
+    return;
+  }
+
   try {
     let currentVersion = "1.0.0";
     try {
-      const appInfo = await App.getInfo();
-      if (appInfo?.version) {
-        currentVersion = appInfo.version;
+      if (Capacitor.isNativePlatform()) {
+        const appInfo = await App.getInfo();
+        if (appInfo?.version) {
+          currentVersion = appInfo.version;
+        }
       }
     } catch {
-      // Fallback if not running in native Capacitor runtime
       currentVersion = "1.0.0";
     }
 
     const repoOwner = "Timofeymelehin";
     const repoName = "travelspend-app";
-    const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/releases/latest`);
+    
+    // Add timeout to prevent hanging fetch
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/releases/latest`, {
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    }).finally(() => clearTimeout(timeoutId));
 
     if (response.status === 404) {
       if (manual) {
-        alert("Релизы на GitHub пока не найдены (404). Создайте первый релиз (Release) с прикрепленным APK-файлом в репозитории GitHub.");
+        alert("Релизы на GitHub пока не найдены. Сборка первого релиза будет сформирована в репозитории.");
       }
       return;
     }
 
     if (!response.ok) {
       if (manual) {
-        alert("Не удалось проверить обновление. Проверьте подключение к интернету.");
+        alert(`Не удалось проверить обновление (код ответа GitHub: ${response.status}).`);
       }
       return;
     }
@@ -48,11 +72,15 @@ export async function checkForAppUpdates(manual = false) {
       if (apkAsset && apkAsset.browser_download_url) {
         const confirmUpdate = window.confirm(`Доступна новая версия ${latestVersion} (у вас ${currentVersion}). Обновить приложение?`);
         if (confirmUpdate) {
-          await downloadAndInstallApk(apkAsset.browser_download_url);
+          if (Capacitor.isNativePlatform()) {
+            await downloadAndInstallApk(apkAsset.browser_download_url);
+          } else {
+            window.location.href = apkAsset.browser_download_url;
+          }
         }
       } else {
         if (manual) {
-          alert(`Найдена версия ${latestVersion}, но APK файл не прикреплен к релизу в GitHub.`);
+          alert(`Найдена версия ${latestVersion}, но APK файл еще формируется в GitHub Actions.`);
         }
       }
     } else {
@@ -60,10 +88,14 @@ export async function checkForAppUpdates(manual = false) {
         alert(`У вас установлена последняя актуальная версия (${currentVersion}).`);
       }
     }
-  } catch (e) {
-    console.error("Failed to check for app updates:", e);
+  } catch (e: any) {
+    if (e?.name === 'AbortError') {
+      if (manual) alert("Время ожидания ответа от GitHub истекло. Проверьте интернет-соединение.");
+      return;
+    }
+    console.warn("Could not check for app updates:", e);
     if (manual) {
-      alert("Произошла ошибка при проверке обновлений. Проверьте подключение к интернету.");
+      alert("Не удалось связаться с сервером GitHub. Проверьте подключение к сети.");
     }
   }
 }
